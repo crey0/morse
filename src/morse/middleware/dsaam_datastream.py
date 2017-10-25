@@ -48,10 +48,14 @@ def datastream_initialize(self):
     dt = Time(nanos=period)
     
     # setting up pub/sub
-    if issubclass(self.__class__, ROSPublisher):       
+    if issubclass(self.__class__, ROSPublisher):
+        if "subscribers" in self.kwargs:
+            sinks = self.kwargs["subscribers"]
+        else:
+            sinks = None
         self.dsaam_node.setup_publisher(self.topic_name, self.ros_class_orig,
-                                  dt,
-                                  sinks=None)
+                                        dt,
+                                        sinks=sinks)
         
     if issubclass(self.__class__, ROSSubscriber):
         self.dsaam_node.setup_subscriber(self.topic_name, self.ros_class_orig,
@@ -76,6 +80,16 @@ def dsaam_publish(self, m):
 
     """
     m_time =  Time(m.header.stamp.secs, m.header.stamp.nsecs)
+
+    # Ugly hack to account for the fact that morse time is in float, and
+    # therefore subject to rounding error.
+    # TODO find better solution
+    if m_time != self.dsaam_node.time:
+        logger.warning("Time discrepancy when publishing message, expected {} "
+                       "got {}. Resetting message time "\
+                       .format(self.dsaam_node.time, m_time))
+        m_time(self.dsaam_node.time)
+                    
     self.dsaam_node.send(self.topic_name, m, m_time)
     self.sequence +=1
 
