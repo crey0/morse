@@ -22,6 +22,7 @@ option(BUILD_MOOS_SUPPORT "Build MOOS middleware support" ON)
 option(BUILD_MAVLINK_SUPPORT "Build Mavlink middleware support" ON)
 option(BUILD_PPRZLINK_SUPPORT "Build Pprzlink middleware support" ON)
 option(BUILD_HLA_SUPPORT "Build HLA middleware support. Also used for distributed HLA simulation." ON)
+option(BUILD_DSAAM_SUPPORT "Build DSAAM/ROS middleware support." ON)
 option(PYMORSE_SUPPORT "Build and install the Python bindings for MORSE." ON)
 
 list(APPEND CMAKE_MODULE_PATH ${CMAKE_CURRENT_SOURCE_DIR}/config/)

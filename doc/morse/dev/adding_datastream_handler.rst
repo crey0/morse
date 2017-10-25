@@ -402,3 +402,23 @@ position of a quadrotor in an environment:
             self.data['pitch']  = angle_of_int(self._msg['theta'])
             self.data['yaw']    = angle_of_int(self._msg['psi'])
 
+
+DSAAM middleware :tag:`dsaam`
++++++++++++++++++++++++++++++++++++
+
+DSAAM adds time management capabilities to a message passing middleware.
+Currently, it can only be used in conjunction with ROS. Any ROS enabled sensor
+or actuator can be used, by specifying the ``dsaam/ros`` middleware in the
+builder script, which automatically generates a DSAAM enabled version of the
+datastream. Therefore, if you implement a datastream handler for ROS, it should
+work out of the box, provided you respect the ``ROSPublisher`` \/
+``ROSSubscriber`` interfaces. In particular, ``publish()`` and ``callback()``
+methods are overriden by DSAAM, and the ``topic`` object should not be used
+directly.
+
+Limitations :
+- TF subscribers and publishers are not supported (as well as any
+multi-publisher topic)
+- Only the main topic is managed by the DSAAM node (for example with the
+``VideoCamera sensor``, the ``camera_topic`` is not).
+

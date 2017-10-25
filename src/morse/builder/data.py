@@ -42,6 +42,7 @@ MORSE_DATASTREAM_MODULE = {
     'hla': 'morse.middleware.hla_datastream.HLADatastreamManager',
     'mavlink': 'morse.middleware.mavlink_datastream.MavlinkDatastreamManager',
     'pprzlink': 'morse.middleware.pprzlink_datastream.PprzlinkDatastreamManager',
+    'dsaam/ros': 'morse.middleware.dsaam_datastream.DSAAMROSDatastreamManager'
 }
 
 MORSE_MODIFIER_DICT = {

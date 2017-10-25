@@ -200,7 +200,8 @@ class ROSSubscriber(AbstractROS):
         AbstractROS.initialize(self)
         self.message = None
         # Generate a subscriber for the component
-        self.topic = rospy.Subscriber(self.topic_name, self.ros_class, self.callback)
+        if self.ros_class != Header:
+            self.topic = rospy.Subscriber(self.topic_name, self.ros_class, self.callback)
         logger.info('ROS subscriber initialized for %s'%self)
 
     def callback(self, message):
