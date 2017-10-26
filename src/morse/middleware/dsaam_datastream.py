@@ -44,23 +44,26 @@ def datastream_initialize(self):
 
     # TODO proper dt and sinks
     freq = self.component_instance.frequency
+    queue_size = ROSPublisher.determine_queue_size(self)
     period = int(NS_IN_SECOND//freq)
     dt = Time(nanos=period)
+
+    start_time = self.kwargs.get("start_time", self.dsaam_node.time)
     
     # setting up pub/sub
     if issubclass(self.__class__, ROSPublisher):
-        if "subscribers" in self.kwargs:
-            sinks = self.kwargs["subscribers"]
-        else:
-            sinks = None
+        sinks = self.kwargs.get("subscribers", None)
+        logger.info("Setting subs for pub {} : {}".format(self.topic_name, sinks)) 
         self.dsaam_node.setup_publisher(self.topic_name, self.ros_class_orig,
-                                        dt,
+                                        start_time, dt,
+                                        queue_size,
                                         sinks=sinks)
         
     if issubclass(self.__class__, ROSSubscriber):
         self.dsaam_node.setup_subscriber(self.topic_name, self.ros_class_orig,
                                          self.dsaam_callback,
-                                         dt)
+                                         start_time, dt,
+                                         queue_size)
 
 def dsaam_callback(self, topic, message, tmin_next):
     """This is the callback() method of the DSAAM datastream proxy created
@@ -92,6 +95,7 @@ def dsaam_publish(self, m):
                     
     self.dsaam_node.send(self.topic_name, m, m_time)
     self.sequence +=1
+    logger.warning("{} : publishing message {}:{} ".format(self.topic_name, self.sequence, m_time))
 
 # This module
 module = sys.modules[__name__]
@@ -150,6 +154,8 @@ class DSAAMROSDatastreamManager(DatastreamManager):
         
 
     def action(self):
+        logger.warning("--> action()")
+
         node=self.node
         
         next_time = node.time + node.dt
@@ -157,8 +163,11 @@ class DSAAMROSDatastreamManager(DatastreamManager):
         # Init can only be called once all subscribers and publishers have been
         # setup, therefore it is called here, which is suboptimal.
         if not self.init_done:
+            node.ros_init(init_node=False)
             node.init()
             self.init_done = True
+            logger.warning("action() ROS init OK")
+
         else:
             # If this is not the first call, step to the next time related to
             # ugly hack start_time = start_time + dt in __init__
@@ -168,6 +177,8 @@ class DSAAMROSDatastreamManager(DatastreamManager):
         while node.next_time() < next_time:
             node.next()
 
-        logger.debug("DSAAM node : Stepping to {}".format(next_time))
+        logger.warning("action() : Stepping to {}".format(next_time))
+        logger.warning("<-- action()".format(next_time))
+
 
 
