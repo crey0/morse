@@ -83,7 +83,6 @@ def dsaam_publish(self, m):
 
     """
     m_time =  Time(m.header.stamp.secs, m.header.stamp.nsecs)
-
     # Ugly hack to account for the fact that morse time is in float, and
     # therefore subject to rounding error.
     # TODO find better solution
@@ -93,9 +92,10 @@ def dsaam_publish(self, m):
                        .format(self.dsaam_node.time, m_time))
         m_time(self.dsaam_node.time)
                     
-    self.dsaam_node.send(self.topic_name, m, m_time)
     self.sequence +=1
-    logger.warning("{} : publishing message {}:{} ".format(self.topic_name, self.sequence, m_time))
+    logger.warning("{} : publishing message {} at {} ".format(self.topic_name, self.sequence, m_time))
+    self.dsaam_node.send(self.topic_name, m, m_time)
+    
 
 # This module
 module = sys.modules[__name__]
@@ -154,15 +154,17 @@ class DSAAMROSDatastreamManager(DatastreamManager):
         
 
     def action(self):
-        logger.warning("--> action()")
+        logger.warning("--> action(frame_time={}, morse_time={})".format(
+            blenderapi.frame_time(),
+            blenderapi.persistantstorage().time.time))
 
         node=self.node
         
-        next_time = node.time + node.dt
 
         # Init can only be called once all subscribers and publishers have been
         # setup, therefore it is called here, which is suboptimal.
         if not self.init_done:
+            next_time = node.time
             node.ros_init(init_node=False)
             node.init()
             self.init_done = True
@@ -171,13 +173,14 @@ class DSAAMROSDatastreamManager(DatastreamManager):
         else:
             # If this is not the first call, step to the next time related to
             # ugly hack start_time = start_time + dt in __init__
+            next_time = node.time + node.dt
             node.step(next_time)
+            logger.warning("action() : Stepping to {}".format(next_time))
 
         # Delivering all messages up to time + dt
-        while node.next_time() < next_time:
+        while node.next_time() <= next_time:
             node.next()
 
-        logger.warning("action() : Stepping to {}".format(next_time))
         logger.warning("<-- action()".format(next_time))
 
 
