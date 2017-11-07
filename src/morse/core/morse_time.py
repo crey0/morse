@@ -113,14 +113,16 @@ class BestEffortStrategy:
 
 class FixedSimulationStepStrategy:
     def __init__ (self, relative_time):
+        self._incr = 1.0 / blenderapi.getfrequency()
         if relative_time:
             self.time = 0.0
             self._real_time_offset = time.time()
+            self._frame_time_offset = blenderapi.frame_time() - self._incr
         else:
             self.time = time.time()
             self._real_time_offset = 0.0
+            self._frame_time_offset = 0.0
         self._time_offset = copy.copy(self.time)
-        self._incr = 1.0 / blenderapi.getfrequency()
 
         self._stat_jitter = Stats()
         self._last_time = 0.0
@@ -128,14 +130,20 @@ class FixedSimulationStepStrategy:
         logger.info('Morse configured in Fixed Simulation Step Mode with '
                     'time step of %f sec ( 1.0 /  %d)' %
                     (self._incr, blenderapi.getfrequency()))
+        
+        if(self._frame_time_offset > 0.0):
+            logger.info("Frame-time offset is {}".format(self._frame_time_offset))
+
 
     def update (self):
         current_time = blenderapi.frame_time()
         if current_time == -1:
             self.time = self.time + self._incr
         else:
-            self.time = current_time + self._time_offset
+            self.time = current_time + self._time_offset - self._frame_time_offset
+
         self._update_statistics()
+        logger.info('Morse time advanced to {}'.format(self.time))
 
     def name (self):
         return 'Fixed Simulation Step'
