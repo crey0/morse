@@ -49,7 +49,6 @@ def datastream_initialize(self):
     dt = Time(nanos=period)
 
     start_time = self.kwargs.get("start_time", self.dsaam_node.time)
-    
     # setting up pub/sub
     if issubclass(self.__class__, ROSPublisher):
         sinks = self.kwargs.get("subscribers", None)
@@ -60,7 +59,10 @@ def datastream_initialize(self):
                                         sinks=sinks)
         
     if issubclass(self.__class__, ROSSubscriber):
-        self.dsaam_node.setup_subscriber(self.topic_name, self.ros_class_orig,
+        node_name = self.kwargs.get("pub_node", None)
+        assert node_name is not None, "Please specify pub_node for topic {} "\
+            .format(self.topic_name)
+        self.dsaam_node.setup_subscriber(node_name, self.topic_name, self.ros_class_orig,
                                          self.dsaam_callback,
                                          start_time, dt,
                                          queue_size)
