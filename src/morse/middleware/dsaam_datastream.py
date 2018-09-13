@@ -13,7 +13,7 @@ datastream for usage with the DSAAM/ROS library.
 """
 import logging; logger = logging.getLogger("morse." + __name__)
 from morse.core.datastream import DatastreamManager
-from dsaam.ros.ros_node import RosNode, Time
+from dsaam.ros.ros_node import RosNode, Time, FlowType
 from dsaam.time import NS_IN_SECOND
 from morse.middleware.ros.abstract_ros import ROSPublisher, ROSSubscriber, Header
 import importlib
@@ -56,7 +56,8 @@ def datastream_initialize(self):
         self.dsaam_node.setup_publisher(self.topic_name, self.ros_class_orig,
                                         start_time, dt,
                                         queue_size,
-                                        sinks=sinks)
+                                        sinks=sinks,
+                                        ftype=FlowType.OBS)
         
     if issubclass(self.__class__, ROSSubscriber):
         node_name = self.kwargs.get("pub_node", None)
@@ -74,6 +75,7 @@ def dsaam_callback(self, topic, message, tmin_next):
 
     """
     m, t, dt = message
+    logger.warning("{} : receiving message at {} ".format(self.topic_name, t))
     self.callback(m)
     
 def dsaam_publish(self, m):
@@ -112,6 +114,10 @@ class DSAAMROSDatastreamManager(DatastreamManager):
         start_time = Time(\
             nanos=int(NS_IN_SECOND * blenderapi.persistantstorage().time.time))
         dt = Time(nanos=int(NS_IN_SECOND//blenderapi.getfrequency()))
+        
+        # We have to do this because MORSE advances time after this.action()
+        # but before sensors.action()/actuators.action()
+        # Therefore morse_time != 0 for the first sensor/actuactor update.
         start_time += dt #TODO cleanup this hack
         logger.warning("Setting up DSAAM node with time={}, dt={}"\
                        .format(start_time,dt))
@@ -162,7 +168,6 @@ class DSAAMROSDatastreamManager(DatastreamManager):
 
         node=self.node
         
-
         # Init can only be called once all subscribers and publishers have been
         # setup, therefore it is called here, which is suboptimal.
         if not self.init_done:
@@ -171,17 +176,15 @@ class DSAAMROSDatastreamManager(DatastreamManager):
             node.init()
             self.init_done = True
             logger.warning("action() ROS init OK")
-
         else:
-            # If this is not the first call, step to the next time related to
-            # ugly hack start_time = start_time + dt in __init__
             next_time = node.time + node.dt
-            node.step(next_time)
-            logger.warning("action() : Stepping to {}".format(next_time))
 
         # Delivering all messages up to time + dt
         while node.next_time() <= next_time:
             node.next()
+
+        node.step(next_time)
+        logger.warning("action() : Stepping to {}".format(next_time))
 
         logger.warning("<-- action()".format(next_time))
 
