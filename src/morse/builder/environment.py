@@ -348,8 +348,8 @@ class Environment(AbstractComponent):
         scene.game_settings.physics_engine = 'BULLET'
         scene.game_settings.physics_step_sub = self._physics_step_sub
         # set simulation view resolution (4:3)
-        scene.render.resolution_x = 1290
-        scene.render.resolution_y = 960
+        scene.render.resolution_x = 800
+        scene.render.resolution_y = 600
 
         # define 'Scene_Script_Holder' as the blender object of Enrivonment
         if not 'Scene_Script_Holder' in bpymorse.get_objects():
